@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.env
+.env.*
+venv/
+.venv/
+*.log
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Project Data (Avoid committing large datasets/history)
+**/data/history/
+**/data/images/
+**/data/*.db
+**/data/*.sqlite
+**/app/data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+tmp/
+temp/

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. AI Training Backend (FastAPI + PyTorch + Celery)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aoi-backend
+    volumes:
+      - ./backend/app:/app/app
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      # - NVIDIA_VISIBLE_DEVICES=all  <-- Commented out for CPU mode
+    depends_on:
+      - redis
+    # GPU section removed for CPU mode compatibility
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # 2. Frontend Dashboard (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aoi-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+
+  # 3. Message Broker
+  redis:
+    image: redis:alpine
+    container_name: aoi-redis
+    ports:
+      - "6379:6379"
+
+  # 4. Visualization
+  tensorboard:
+    image: tensorflow/tensorflow:2.14.0 # Removed -gpu tag
+    container_name: aoi-tensorboard
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./logs/tensorboard:/tensorboard_logs
+    command: tensorboard --logdir=/tensorboard_logs --bind_all
