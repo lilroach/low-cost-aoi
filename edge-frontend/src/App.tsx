@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Crosshair, Camera, Target, Play, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Crosshair, Camera, AlertTriangle, CheckCircle } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import ReviewDashboard from './features/review/ReviewDashboard'
 import TeachingView from './features/teaching/TeachingView'
+import RunView from './features/run/RunView'
 import { LoginModal } from './components/LoginModal'
 import { MotionControls } from './components/MotionControls'
 
@@ -84,6 +85,12 @@ function App() {
         fetchStatus()
     }
 
+    const handleHome = async () => {
+        if (!confirm("Return to Machine Zero?")) return
+        await fetch('/api/motion/home', { method: 'POST' })
+        fetchStatus()
+    }
+
     const moveToAbsolute = async (x: number, y: number) => {
         // Calculate diff because our API is relative jog
         // Note: In real app, we should have an absolute move API
@@ -102,6 +109,14 @@ function App() {
         await fetch(`/api/program/record/point`, { method: 'POST' })
         fetchProgram()
     }
+    const handleUpdatePoints = async (points: any[]) => {
+        await fetch('/api/program/points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ points })
+        })
+        fetchProgram()
+    }
     const handleClear = async () => {
         if (confirm("Clear current program?")) {
             await fetch(`/api/program/clear`, { method: 'DELETE' })
@@ -118,7 +133,6 @@ function App() {
         await fetch(`/api/program/load/${name}`, { method: 'POST' })
         setProgramName(name)
         fetchProgram()
-        setTab('run')
         setAlignState('idle')
         setRunResults([])
     }
@@ -368,7 +382,7 @@ function App() {
 
                     {/* Shared Motion Controls (Always Visible at Top now) */}
                     {/* Only enabled for Engineer OR during Alignment */}
-                    <MotionControls onJog={handleJog} stepSize={stepSize} setStepSize={setStepSize} userRole={userRole} alignState={alignState} />
+                    <MotionControls onJog={handleJog} onHome={handleHome} stepSize={stepSize} setStepSize={setStepSize} userRole={userRole} alignState={alignState} />
 
                     {/* Status Card (Always visible) */}
                     <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
@@ -407,92 +421,30 @@ function App() {
                                 handleRecordRef={handleRecordRef}
                                 handleRecordPoint={handleRecordPoint}
                                 handleClear={handleClear}
+                                handleUpdatePoints={handleUpdatePoints}
+                                onMoveToPoint={(p: any) => moveToAbsolute(p.x, p.y)}
                             />
                         )}
                     </div>
 
+
                     {tab === 'run' && (
-                        <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 text-center space-y-4">
-                            <h3 className="text-xl font-bold text-white">{program.name || "No Program Loaded"}</h3>
-                            <p className="text-zinc-500 text-sm">{program.points.length} Points • {program.refs.length} Refs</p>
-
-                            {alignState === 'idle' ? (
-                                <div className="space-y-4">
-                                    {/* Program Selector */}
-                                    <div className="flex flex-col gap-1 text-left">
-                                        <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Inspection Program</label>
-                                        <select
-                                            value={program.name === "Untitled" ? "" : program.name}
-                                            onChange={(e) => {
-                                                if (e.target.value) handleLoad(e.target.value)
-                                            }}
-                                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none appearance-none cursor-pointer"
-                                        >
-                                            <option value="" disabled>-- Select Program --</option>
-                                            {progList.map((p: any) => (
-                                                <option key={p.name} value={p.name}>{p.name} ({p.points_count} pts)</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <div className="flex-1 space-y-1 text-left">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Part No.</label>
-                                            <input
-                                                value={partNo} onChange={(e) => setPartNo(e.target.value)}
-                                                placeholder="e.g. PCB-1001"
-                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="flex-1 space-y-1 text-left">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase ml-1">Batch No.</label>
-                                            <input
-                                                value={batchNo} onChange={(e) => setBatchNo(e.target.value)}
-                                                placeholder="e.g. 2024-01-A"
-                                                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={startAlignment}
-                                        disabled={program.points.length === 0 || !partNo || !batchNo}
-                                        className={cn("w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all",
-                                            (program.points.length === 0 || !partNo || !batchNo) ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20")}
-                                    >
-                                        <Play fill="currentColor" /> START RUN
-                                    </button>
-
-                                    {(!partNo || !batchNo) && program.points.length > 0 && (
-                                        <div className="text-[10px] text-red-400 font-medium">
-                                            * Please enter Part No. and Batch No. to start
-                                        </div>
-                                    )}
-                                </div>
-                            ) : alignState === 'aligning_ref' ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                                    <div className="bg-blue-900/30 border border-blue-500/50 p-4 rounded-lg">
-                                        <h4 className="font-bold text-blue-400 mb-2 flex items-center justify-center gap-2">
-                                            <Target className="animate-pulse" /> Aligning Ref {currentAlignRefIndex + 1}
-                                        </h4>
-                                        <p className="text-xs text-zinc-300 mb-4">
-                                            Machine moved to recorded Ref position.<br />
-                                            Use joystick to perfectly align the crosshair to the actual mark, then confirm.
-                                        </p>
-                                        <button
-                                            onClick={confirmCurrentRef}
-                                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition"
-                                        >
-                                            CONFIRM POSITION
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="py-4 text-emerald-500 font-bold animate-pulse flex items-center justify-center gap-2">
-                                    <CheckCircle size={20} /> INSPECTING...
-                                </div>
-                            )}
-                        </div>
+                        <RunView
+                            program={program}
+                            progList={progList}
+                            handleLoad={handleLoad}
+                            alignState={alignState}
+                            currentAlignRefIndex={currentAlignRefIndex}
+                            startAlignment={startAlignment}
+                            confirmCurrentRef={confirmCurrentRef}
+                            runIndex={runIndex}
+                            isRunning={isRunning}
+                            partNo={partNo}
+                            setPartNo={setPartNo}
+                            batchNo={batchNo}
+                            setBatchNo={setBatchNo}
+                            calculateAndRun={calculateAndRun}
+                        />
                     )}
 
                     {tab === 'review' && (

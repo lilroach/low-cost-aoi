@@ -127,6 +127,16 @@ async def record_point():
     current_program.points.append(p)
     return current_program
 
+class PointsUpdate(BaseModel):
+    points: List[Point]
+
+@router.post("/points")
+async def update_points(data: PointsUpdate):
+    """Update valid points list (for reordering, deleting, editing)"""
+    global current_program
+    current_program.points = data.points
+    return current_program
+
 @router.delete("/clear")
 async def clear_program():
     global current_program

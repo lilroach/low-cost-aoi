@@ -1,17 +1,20 @@
 from fastapi import APIRouter, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import asyncio
 import time
 import math
-
-from app.api import motion, camera, inference
-from app.api.program import Point
+import csv
+import io
 import os
 import json
 import cv2
 import datetime
 import shutil
+
+from app.api import motion, camera, inference
+from app.api.program import Point
 
 HISTORY_DIR = "/app/data/history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
@@ -219,6 +222,58 @@ async def upload_run(run_id: str):
     # We could copy to a "synced" folder or make an HTTP POST
     
     return {"status": "success", "message": "Uploaded to Host"}
+
+@router.get("/history/{run_id}/export/csv")
+async def export_run_csv(run_id: str):
+    run_dir = os.path.join(HISTORY_DIR, run_id)
+    report_path = os.path.join(run_dir, "report.json")
+    
+    if not os.path.exists(report_path):
+        return {"error": "Run not found"}
+        
+    with open(report_path, "r") as f:
+        data = json.load(f)
+        
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(["Point ID", "X", "Y", "Result", "Label", "Confidence"])
+    
+    # Rows
+    for r in data.get("results", []):
+        # Flatten detections (just take first one or join them)
+        label = ""
+        conf = ""
+        if r.get("detections"):
+            d = r["detections"][0]
+            label = d.get("label", "")
+            conf = d.get("confidence", "")
+            
+        writer.writerow([
+            r.get("point_id"),
+            r.get("x"),
+            r.get("y"),
+            r.get("result"),
+            label,
+            conf
+        ])
+        
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=run_{run_id}.csv"}
+    )
+
+@router.delete("/history/{run_id}")
+async def delete_run(run_id: str):
+    run_dir = os.path.join(HISTORY_DIR, run_id)
+    if os.path.exists(run_dir):
+        shutil.rmtree(run_dir)
+        return {"status": "deleted", "run_id": run_id}
+    return {"error": "Run not found"}
 
 class RunRequest(BaseModel):
     points: List[Point]

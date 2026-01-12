@@ -21,19 +21,70 @@ class MockCamera:
         # Simulate capture delay
         time.sleep(0.05)
         
-        # Create a dummy image (moving box)
+        # Create a dummy image
         img = np.zeros((480, 640, 3), np.uint8)
         
-        # Update box position
-        self.box_x += self.dx
-        self.box_y += self.dy
+        # Get actual machine position from motion module
+        # Note: Importing inside method to avoid circular import issues if motion imports camera
+        from app.api import motion
         
-        # Bounce
-        if self.box_x <= 0 or self.box_x >= 590: self.dx *= -1
-        if self.box_y <= 0 or self.box_y >= 430: self.dy *= -1
+        # Visualize Machine Position
+        # Map 0-300mm space to pixel space
+        # Let's say 1mm = 2px. origin at center? 
+        # Or just show a grid moving? 
         
-        cv2.rectangle(img, (self.box_x, self.box_y), (self.box_x+50, self.box_y+50), (0, 255, 0), 2)
-        cv2.putText(img, "MOCK CAMERA", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        # Let's draw a "PCB Feature" that is ensuring at Machine(150, 150)
+        # If camera is at (x,y), the feature is at (150-x, 150-y) relative to center?
+        # Simpler: Just show coordinates as text and a crosshair that moves
+        
+        cx, cy = int(motion.machine_pos["x"]), int(motion.machine_pos["y"])
+        
+        # Draw a static "Bed" grid
+        # As camera moves (machine_pos changes), the grid should move opposite?
+        # Camera moves +X, Grid moves -X in the frame.
+        
+        shift_x = int(motion.machine_pos["x"] * 10) # 1mm = 10px
+        shift_y = int(motion.machine_pos["y"] * 10)
+        
+        # Draw some fixed circles on the "bed"
+        # Circle 1 at (0,0) -> Frame coords: Center - Shift
+        # Frame Center
+        fc_x, fc_y = 320, 240
+        
+        # Draw Origin (0,0)
+        cv2.circle(img, (fc_x - shift_x, fc_y - shift_y + 480), 20, (0, 0, 255), -1) # +480 to flip Y? 
+        # CNC Y+ usually up. Image Y+ usually down.
+        # Let's align: Camera Y+ (Up) -> Image moves Down?
+        # If camera moves UP (Y+), static object moves DOWN in frame.
+        # Image Y is Top-Down.
+        # Shift Y should be inverted? 
+        
+        grid_target_x = fc_x - shift_x
+        grid_target_y = fc_y + shift_y # + because if Y grows, we move down? No.
+        # If Machine Y=0. Object is at Center.
+        # If Machine Y=10. Camera moved Up. Object should be lower in frame.
+        # Image Y increases downwards.
+        # So Object Y = Center Y + (ObjectWorldY - CameraY) ?
+        
+        # Let's just draw the text first for clarity
+        
+        cv2.putText(img, f"POS: X{motion.machine_pos['x']:.1f} Y{motion.machine_pos['y']:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(img, "MOVING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+        
+        # Draw a moving box representing the "Camera" location in the world?
+        # Or a fixed crosshair and moving world?
+        cv2.line(img, (320, 230), (320, 250), (0, 255, 255), 1)
+        cv2.line(img, (310, 240), (330, 240), (0, 255, 255), 1)
+        
+        # Draw "World" dots
+        # Dot at World(10,10)
+        # ScreenX = 320 + (10 - X)*10
+        # ScreenY = 240 + (Y - 10)*10 (Y is flipped?)
+        
+        # Simple feedback: Draw a circle that moves WITH the machine coords for now
+        # so user sees SOMETHING moving.
+        cv2.circle(img, (50 + int(motion.machine_pos["x"]), 400 - int(motion.machine_pos["y"])), 15, (0, 255, 255), -1)
+
         return img
 
     def flush_buffer(self):

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { History, ArrowRight, ArrowLeft, UploadCloud, CheckCircle, AlertTriangle, Target } from 'lucide-react'
+import { History, ArrowRight, ArrowLeft, UploadCloud, CheckCircle, AlertTriangle, Target, Trash2, FileDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 export default function ReviewDashboard() {
@@ -37,6 +37,22 @@ export default function ReviewDashboard() {
         }
     }
 
+    const handleDeleteRun = async (runId: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (confirm(`Are you sure you want to delete Run ${runId}? This cannot be undone.`)) {
+            await fetch(`/api/orchestrator/history/${runId}`, { method: 'DELETE' })
+            fetchHistory()
+            if (selectedRun === runId) {
+                setSelectedRun(null)
+                setSelectedRunDetail(null)
+            }
+        }
+    }
+
+    const handleExportCsv = (runId: string) => {
+        window.open(`/api/orchestrator/history/${runId}/export/csv`, '_blank')
+    }
+
     // Initial Fetch
     useEffect(() => {
         fetchHistory()
@@ -70,6 +86,9 @@ export default function ReviewDashboard() {
                                         </div>
                                         <div className="text-[10px] text-zinc-600">{run.stats.ng} NG / {run.stats.total} Total</div>
                                     </div>
+                                    <button onClick={(e) => handleDeleteRun(run.run_id, e)} className="p-2 text-zinc-600 hover:text-red-500 hover:bg-zinc-800 rounded transition" title="Delete Run">
+                                        <Trash2 size={16} />
+                                    </button>
                                     <ArrowRight size={16} className="text-zinc-600 group-hover:text-white" />
                                 </div>
                             </div>
@@ -105,9 +124,14 @@ export default function ReviewDashboard() {
                             ))}
                         </div>
                         <div className="p-4 border-t border-zinc-800">
-                            <button onClick={() => handleUploadRun(selectedRun)} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold text-white flex justify-center gap-2">
-                                <UploadCloud size={16} /> Upload to Host
-                            </button>
+                            <div className="flex gap-2">
+                                <button onClick={() => handleExportCsv(selectedRun)} className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 rounded font-bold text-zinc-300 flex justify-center gap-2 border border-zinc-700">
+                                    <FileDown size={16} /> Export CSV
+                                </button>
+                                <button onClick={() => handleUploadRun(selectedRun)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold text-white flex justify-center gap-2">
+                                    <UploadCloud size={16} /> Upload
+                                </button>
+                            </div>
                         </div>
                     </div>
 
