@@ -62,6 +62,51 @@
 *   **Any-AOI (或類似 GitHub 專案)**
     *   搜尋 `github pcb aoi opencv` 可以找到許多使用傳統 CV (Template Matching) 進行比對的專案，這適合作為 AI 的輔助 (例如先用 CV 定位，再用 AI 判斷缺陷)。
 
-## 5. 前端開發 (React + Hardware)
-*   **React-Use-Websocket**
-    *   學習如何在 React 中優雅地處理 WebSocket 連線 (這對即時顯示座標、狀態很重要)。
+6. Klipper Input Shaping Setup (Raspberry Pi 5)
+您的 Raspberry Pi 5 效能強大，非常適合直接用來跑 Input Shaping 校正。
+
+### 步驟 1：硬體連接 (ADXL345)
+請購買 **ADXL345 加速度規** (建議買有杜邦接頭的版本)，並接到 Pi 5 的 GPIO。
+*   **VCC** -> 3.3V (Pin 1)
+*   **GND** -> Ground (Pin 6)
+*   **CS** -> GPIO 8 (Pin 24)
+*   **SDO** -> GPIO 9 (Pin 21)
+*   **SDA** -> GPIO 10 (Pin 19)
+*   **SCL** -> GPIO 11 (Pin 23)
+
+### 步驟 2：啟用 SPI 介面
+Pi 5 預設可能沒開 SPI，請執行：
+```bash
+sudo raspi-config
+# 選擇 Interfacing Options -> SPI -> Yes
+sudo reboot
+```
+
+### 步驟 3：安裝軟體依賴
+回到 Pi 的終端機，安裝運算所需的 Python 函式庫：
+```bash
+sudo apt update
+sudo apt install python3-numpy python3-matplotlib libatlas-base-dev
+~/klippy-env/bin/pip install -v numpy
+```
+
+### 步驟 4：修改 printer.cfg
+在 Klipper 設定檔中加入 Pi 當作 Second MCU：
+```ini
+[mcu rpi]
+serial: /tmp/klipper_host_mcu
+
+[adxl345]
+cs_pin: rpi:None
+
+[resonance_tester]
+accel_chip: adxl345
+probe_points:
+    100, 100, 20  # 您機台的中間點座標 (X, Y, Z)
+```
+
+### 步驟 5：執行校正
+1.  在網頁介面 Console 輸入 `SHAPER_CALIBRATE`。
+2.  機器會開始高頻震動 (會有怪聲是正常的)。
+3.  完成後輸入 `SAVE_CONFIG`，Klipper 會自動把最佳參數寫入設定檔。
+
