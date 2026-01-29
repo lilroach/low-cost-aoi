@@ -2,11 +2,27 @@
 
 An affordable, open-source Automated Optical Inspection (AOI) system designed for electronics manufacturing and DIY enthusiasts. This project consists of two main components: the **Edge System** (Raspberry Pi 5) for real-time inspection and the **Training Host** (PC) for AI model development.
 
+## 📚 Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+- **Hardware**:
+    - [Hardware Spec & Cost](docs/hardware/spec_and_cost.md)
+    - [Camera & Optics Guide](docs/hardware/camera_optics.md)
+    - [Motion Control Selection](docs/hardware/motion_control_selection.md)
+    - [Klipper Setup](docs/hardware/klipper_setup.md)
+- **Project**:
+    - [Implementation Plan](docs/project/implementation_plan.md)
+    - [Status Reports](docs/project/status_report_2026_01_13.md)
+    - [Tasks](docs/project/tasks.md)
+- **Resources**:
+    - [Learning Resources](docs/resources/references.md)
+
 ## 🏗️ System Architecture
 
 ### 1. Edge System (Raspberry Pi 5)
 The runtime environment located in `edge-backend` and `edge-frontend`.
-- **Hardware**: Raspberry Pi 5 + FluidNC Gantry + USB/CSI Camera.
+- **Hardware**: Raspberry Pi 5 + FluidNC/Klipper Gantry + USB/CSI Camera.
 - **Backend**: FastAPI (Python). Handles motion control (G-Code), camera streaming, and inference.
 - **Frontend**: React + Vite (TypeScript). Provides the Operator UI for Teaching, Run, and Review.
 - **Deployment**: Video and API services run in Docker containers via `docker-compose.edge.yml`.
@@ -72,6 +88,7 @@ For training new AI models or managing large datasets.
 
 ```
 e:\Docker\low-cost-aoi\
+├── docs/               # Documenation (Hardware, Project, Resources)
 ├── edge-backend/       # FastAPI app (Motion, Camera, Inference)
 ├── edge-frontend/      # React app (Operator UI)
 ├── training-host/      # Model training scripts & server
@@ -79,8 +96,3 @@ e:\Docker\low-cost-aoi\
 ├── docker-compose.edge.yml  # Compose file for Edge System
 └── docker-compose.yml       # Compose file for Training Host
 ```
-
-## 📝 Recent Updates
-- **Teaching Enhancements**: Added drag-and-drop sorting and direct point editing to speed up programming.
-- **Data Management**: Added CSV export for run results and run deletion capabilities.
-- **Architecture**: Separated Edge and Training environments for better deployment flexibility.
