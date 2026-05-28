@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://low-cost-aoi.local/contracts/dataset_bundle.schema.json",
+  "title": "AOI Dataset Bundle Manifest",
+  "type": "object",
+  "required": ["schema_version", "run_id", "machine_id", "created_at", "contents"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "machine_id": { "type": "string" },
+    "part_no": { "type": "string" },
+    "batch_no": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "contents": {
+      "type": "object",
+      "required": ["report", "program", "images_dir"],
+      "properties": {
+        "report": { "type": "string", "const": "report.json" },
+        "program": { "type": "string", "const": "program.json" },
+        "images_dir": { "type": "string", "const": "images" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

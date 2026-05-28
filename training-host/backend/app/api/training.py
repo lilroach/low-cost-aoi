@@ -1,12 +1,14 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, BackgroundTasks, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio
 import threading
 import time
 import json
+import io
+import zipfile
 from datetime import datetime
 from pathlib import Path
-from ultralytics import YOLO
 
 router = APIRouter(prefix="/training", tags=["training"])
 
@@ -71,13 +73,14 @@ class TrainingManager:
             # In a real scenario, we would generate a data.yaml from the uploaded images in /app/data/raw
             # For this MVP, we might expect a pre-existing YAML or generate one dynamically.
             # Let's assume we are training on a dummy or existing dataset for now to test the pipeline.
-            
+
             # Initialize Model
+            from ultralytics import YOLO
             model = YOLO(config.model_type)
 
             # Custom Callback to stream logs (simulated for now as YOLO callback integration is complex)
             # In production, we would add a custom YOLO callback.
-            
+
             # SIMULATION LOOP (for UI testing phase)
             # We will simulate training progress to verify UI first
             for epoch in range(1, config.epochs + 1):
@@ -87,18 +90,18 @@ class TrainingManager:
 
                 self.current_epoch = epoch
                 self.progress = round((epoch / config.epochs) * 100, 1)
-                
+
                 # Simulate metrics
                 import random
                 loss = max(0, 1.0 - (epoch * 0.05) + random.uniform(-0.05, 0.05))
                 map50 = min(1.0, (epoch * 0.1) + random.uniform(-0.02, 0.02))
-                
+
                 self.metrics["loss"].append(loss)
                 self.metrics["map50"].append(map50)
-                
+
                 log_msg = f"Epoch {epoch}/{config.epochs} - Box Loss: {loss:.4f}, mAP50: {map50:.4f}"
                 asyncio.run(self.broadcast_log(log_msg, "log"))
-                
+
                 time.sleep(1) # Simulate training time per epoch
 
             if not self.stop_event.is_set():
@@ -115,7 +118,7 @@ class TrainingManager:
     def start_training(self, config: TrainingConfig):
         if self.is_running:
             return False, "Training is already in progress"
-        
+
         self._thread = threading.Thread(target=self._run_training, args=(config,), daemon=True)
         self._thread.start()
         return True, "Training started"
@@ -127,6 +130,7 @@ class TrainingManager:
         return True, "Stopping training..."
 
 manager = TrainingManager()
+MODELS_DIR = Path("/app/models")
 
 # --- Endpoints ---
 
@@ -153,6 +157,60 @@ async def get_status():
         "total_epochs": manager.total_epochs,
         "metrics": manager.metrics
     }
+
+
+@router.get("/models")
+async def list_model_bundles():
+    models = []
+    if not MODELS_DIR.exists():
+        return {"models": models}
+
+    for model_dir in MODELS_DIR.iterdir():
+        manifest_path = model_dir / "manifest.json"
+        hef_path = model_dir / "model.hef"
+        if model_dir.is_dir() and manifest_path.exists() and hef_path.exists():
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as file:
+                    manifest = json.load(file)
+            except Exception:
+                manifest = {"model_id": model_dir.name}
+            models.append({
+                "model_id": manifest.get("model_id", model_dir.name),
+                "format": manifest.get("format"),
+                "source_yolo_model": manifest.get("source_yolo_model"),
+                "created_at": manifest.get("created_at"),
+            })
+    return {"models": models}
+
+
+@router.get("/models/{model_id}/download")
+async def download_model_bundle(model_id: str):
+    model_dir = (MODELS_DIR / model_id).resolve()
+    if not str(model_dir).startswith(str(MODELS_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid model_id")
+
+    manifest_path = model_dir / "manifest.json"
+    hef_path = model_dir / "model.hef"
+    if not manifest_path.exists() or not hef_path.exists():
+        raise HTTPException(status_code=404, detail="Model bundle not found")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+        bundle.write(manifest_path, "manifest.json")
+        bundle.write(hef_path, "model.hef")
+        labels_path = model_dir / "labels.txt"
+        classes_path = model_dir / "classes.json"
+        if labels_path.exists():
+            bundle.write(labels_path, "labels.txt")
+        if classes_path.exists():
+            bundle.write(classes_path, "classes.json")
+    buffer.seek(0)
+
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={model_id}.zip"},
+    )
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

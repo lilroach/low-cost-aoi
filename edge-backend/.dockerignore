@@ -1,0 +1,12 @@
+__pycache__
+.venv
+.env
+.dockerignore
+.git
+.vscode
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov

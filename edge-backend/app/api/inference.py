@@ -24,9 +24,9 @@ def predict_on_image(image):
     """
     # In real app: results = session.run(...)
     time.sleep(0.5) # Simulate inference time
-    
+
     is_ng = random.random() < 0.3 # 30% chance of NG
-    
+
     if is_ng:
         return {
             "result": "NG",

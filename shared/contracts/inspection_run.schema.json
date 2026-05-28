@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://low-cost-aoi.local/contracts/inspection_run.schema.json",
+  "title": "AOI Inspection Run",
+  "type": "object",
+  "required": ["metadata", "total_points", "results", "completed_at", "status"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "program_name": { "type": "string" },
+        "part_no": { "type": "string" },
+        "batch_no": { "type": "string" },
+        "machine_id": { "type": "string" },
+        "model_id": { "type": "string" },
+        "start_time": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "total_points": { "type": "integer", "minimum": 0 },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["point_id", "x", "y", "result", "detections", "image_path"],
+        "properties": {
+          "point_id": { "type": "integer" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "result": { "type": "string", "enum": ["OK", "NG"] },
+          "image_path": { "type": "string" },
+          "manual_override": { "type": "boolean" },
+          "detections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["label", "confidence", "box"],
+              "properties": {
+                "label": { "type": "string" },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                "box": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": { "type": "number" },
+                  "description": "Pixel-space [x, y, w, h]."
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "completed_at": { "type": "number" },
+    "status": { "type": "string", "enum": ["completed", "error", "stopped"] },
+    "error": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

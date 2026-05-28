@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import camera, motion, scan, program, inference
+from app.api import camera, motion, scan, program, inference, capture, alignment
+from app.config import HISTORY_DIR
 
 app = FastAPI(title="AOI Edge Unit (Simulation)")
 
@@ -13,15 +14,15 @@ app.add_middleware(
 )
 
 from fastapi.staticfiles import StaticFiles
-import os
-os.makedirs("/app/data/history", exist_ok=True)
-app.mount("/data/history", StaticFiles(directory="/app/data/history"), name="history")
+app.mount("/data/history", StaticFiles(directory=str(HISTORY_DIR)), name="history")
 
 app.include_router(camera.router, prefix="/api/camera", tags=["camera"])
 app.include_router(motion.router, prefix="/api/motion", tags=["motion"])
 app.include_router(scan.router, prefix="/api/scan", tags=["scan"])
 app.include_router(program.router, prefix="/api/program", tags=["program"])
 app.include_router(inference.router, prefix="/api/inference", tags=["inference"])
+app.include_router(capture.router, prefix="/api/capture", tags=["capture"])
+app.include_router(alignment.router, prefix="/api/alignment", tags=["alignment"])
 
 # Register Orchestrator
 from app.api import orchestrator

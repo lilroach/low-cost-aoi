@@ -1,98 +1,109 @@
 # 低成本 PCB AOI 系統 (Low-Cost PCB AOI System)
 
-這是一個專為電子製造與 DIY 愛好者設計的經濟型開源自動光學檢測 (AOI) 系統。本專案包含兩個主要組件：負責即時檢測的 **Edge System (邊緣系統)** (Raspberry Pi 5)，以及負責 AI 模型開發的 **Training Host (訓練主機)** (PC)。
+這是一個專為電子製造與 DIY 愛好者設計的經濟型開源自動光學檢測 (AOI) 系統。專案現在分成三個明確環境：
 
-## 📚 專案文件 (Documentation)
+- `edge-backend/` + `edge-frontend/`: Windows 本機 Docker Edge 模擬環境。
+- `raspberry-pi/`: Raspberry Pi 5 + Hailo 8L 實機 Edge 原生部署環境。
+- `training-host/`: PC/Workstation 訓練主機，用於資料集管理、YOLO 訓練與 Hailo 模型包發布。
 
-詳細文件位於 `docs/` 目錄中：
+## Documentation
 
-- **硬體 (Hardware)**:
-    - [硬體規格與費用估算](docs/hardware/spec_and_cost.md)
-    - [相機與光學設置指南](docs/hardware/camera_optics.md)
-    - [運動控制方案選擇](docs/hardware/motion_control_selection.md)
-    - [Klipper 設定教學](docs/hardware/klipper_setup.md)
-- **專案管理 (Project)**:
-    - [實作計畫](docs/project/implementation_plan.md)
-    - [進度報告 (2026-01-13)](docs/project/status_report_2026_01_13.md)
-    - [待辦事項](docs/project/tasks.md)
-- **資源 (Resources)**:
-    - [學習資源與參考](docs/resources/references.md)
+- 硬體:
+  - [硬體規格與費用估算](docs/hardware/spec_and_cost.md)
+  - [相機與光學設置指南](docs/hardware/camera_optics.md)
+  - [運動控制方案選擇](docs/hardware/motion_control_selection.md)
+  - [Klipper 設定教學](docs/hardware/klipper_setup.md)
+- 專案:
+  - [實作計畫](docs/project/implementation_plan.md)
+  - [進度報告 (2026-01-13)](docs/project/status_report_2026_01_13.md)
+  - [待辦事項](docs/project/tasks.md)
+- 資料/模型契約:
+  - `shared/contracts/inspection_run.schema.json`
+  - `shared/contracts/dataset_bundle.schema.json`
+  - `shared/contracts/model_manifest.schema.json`
 
-## 🏗️ 系統架構
+## Windows Edge 模擬
 
-### 1. 邊緣系統 (Edge System - Raspberry Pi 5)
-位於 `edge-backend` 與 `edge-frontend` 的執行環境。
-- **硬體**: Raspberry Pi 5 + FluidNC/Klipper 龍門架 + USB/CSI 相機。
-- **後端**: FastAPI (Python)。處理運動控制 (G-Code)、相機串流與 AI 推論。
-- **前端**: React + Vite (TypeScript)。提供操作員介面，包含教學 (Teaching)、執行 (Run) 與回顧 (Review) 功能。
-- **部署**: 透過 `docker-compose.edge.yml` 運行視訊與 API 服務容器。
+Windows 下的 Edge 前後端只作 Docker 模擬與 UI/API 開發，不包含樹莓派安裝流程。
 
-### 2. 訓練主機 (Training Host - PC / Workstation)
-位於 `training-host` 的開發環境。
-- **用途**: 管理資料集與訓練 AI 模型 (YOLO/MobileNet)。
-- **技術棧**: Python, PyTorch/TensorFlow, Jupyter。
-- **部署**: 透過 `docker-compose.yml` (標準) 運行。
-
----
-
-## 🚀 邊緣系統快速開始 (Edge System Quick Start)
-
-邊緣系統是操作 AOI 機台的核心介面。
-
-### 前置需求
-- Docker & Docker Compose
-- Raspberry Pi 5 (建議) 或 Linux PC
-
-### 執行邊緣服務
-1. 進入專案根目錄：
-   ```bash
-   cd low-cost-aoi
-   ```
-2. 啟動 Edge 服務堆疊：
-   ```bash
-   docker-compose -f docker-compose.edge.yml up -d --build
-   ```
-3. 存取介面：
-   - **前端 UI**: [http://localhost:3001](http://localhost:3001)
-   - **後端 API**: [http://localhost:8001/docs](http://localhost:8001/docs)
-
-### ✨ Edge 主要功能
-- **教學模式 (Teaching Mode)**: 
-  - 手動移動控制 (Jog Control)。
-  - 記錄參考點 (Fiducial) 與檢測點。
-  - **新功能**: 拖放排序點位、行內編輯座標、以及「移動相機至此」驗證工具。
-- **檢測執行 (Inspection Run)**: 
-  - 自動化掃描序列 (支援模擬或真實運動)。
-  - PCB 手動對位精靈。
-- **回顧儀表板 (Review Dashboard)**:
-  - 檢測執行歷史紀錄。
-  - **新功能**: CSV 資料匯出與歷史紀錄管理 (刪除功能)。
-
----
-
-## 🖥️ 訓練主機快速開始 (Training Host Quick Start)
-
-用於訓練新的 AI 模型或管理大型資料集。
-
-1. 進入 `training-host` 目錄 (若為獨立開發) 或使用根目錄 compose：
-   ```bash
-   docker-compose up -d --build
-   ```
-2. 存取服務：
-   - **儀表板**: [http://localhost:3000](http://localhost:3000)
-   - **TensorBoard**: [http://localhost:6006](http://localhost:6006)
-
----
-
-## 📂 專案結構
-
+```bash
+docker-compose -f docker-compose.edge.yml up -d --build
 ```
-e:\Docker\low-cost-aoi\
-├── docs/               # 專案文件 (硬體, 專案規劃, 資源)
-├── edge-backend/       # FastAPI 應用程式 (運動, 相機, 推論)
-├── edge-frontend/      # React 應用程式 (操作員 UI)
-├── training-host/      # 模型訓練腳本與伺服器
-├── shared/             # 共用程式碼/模型
-├── docker-compose.edge.yml  # 邊緣系統 Compose 檔
-└── docker-compose.yml       # 訓練主機 Compose 檔
+
+- 前端 UI: http://localhost:3001
+- 後端 API: http://localhost:8001/docs
+
+`docker-compose.edge.yml` 會以 `SIMULATION_MODE=true` 啟動後端，適合本機測試相機、運動、檢測流程與資料上傳 API。
+
+## Raspberry Pi Edge 實機
+
+樹莓派實機部署已拆到 `raspberry-pi/`，避免被 Windows Docker 設定影響。
+
+請從 [raspberry-pi/README.md](raspberry-pi/README.md) 開始安裝。重點流程：
+
+1. 在 Windows 編譯 `raspberry-pi/frontend` 的 `dist/`。
+2. 將 `dist/` 傳到 Raspberry Pi。
+3. 在 Pi 執行 `raspberry-pi/backend/deploy-pi-backend.sh` 與 `raspberry-pi/frontend/deploy-pi-frontend.sh`。
+4. 將 Training Host 產出的 Hailo 模型包放到 `raspberry-pi/backend/models/current/`。
+
+Pi 後端會讀取：
+
+- `manifest.json`
+- `model.hef`
+- optional `labels.txt` 或 `classes.json`
+
+模型格式以 Hailo 8L 的 `.hef` 為主，manifest 必須符合 `shared/contracts/model_manifest.schema.json`。
+
+## Training Host
+
+Training Host 用於資料集管理、YOLO 訓練、模型轉換與發布。
+
+```bash
+cd training-host
+docker-compose up -d --build
+```
+
+- 儀表板: http://localhost:3000
+- 後端 API: http://localhost:8000/docs
+- TensorBoard: http://localhost:6006
+- Label Studio: http://localhost:8080
+
+Training Host 現在提供：
+
+- `POST /api/datasets/import-run`: 接收 Edge 上傳的 run bundle zip。
+- `GET /api/training/models`: 列出可發布的 Hailo 模型包。
+- `GET /api/training/models/{model_id}/download`: 下載模型包。
+
+## Edge 與 Training Host 資料交換
+
+Edge 每次檢測可將一個 run bundle 上傳到 Training Host。bundle 內容固定為：
+
+```text
+manifest.json
+report.json
+program.json
+images/
+```
+
+其中：
+
+- `manifest.json` 符合 `shared/contracts/dataset_bundle.schema.json`。
+- `report.json` 符合 `shared/contracts/inspection_run.schema.json`。
+- `images/` 的檔名由 `report.json` 的 `image_path` 對應。
+- `detections[].box` 統一為像素座標 `[x, y, w, h]`。
+
+Edge 使用 `AOI_TRAINING_HOST_URL` 指定上傳目標，預設為 `http://127.0.0.1:8000`。
+
+## Project Structure
+
+```text
+low-cost-aoi/
+├── docs/                    # 專案文件
+├── edge-backend/            # Windows Docker Edge backend 模擬
+├── edge-frontend/           # Windows Docker Edge frontend 模擬
+├── raspberry-pi/            # Raspberry Pi 5 + Hailo 8L 原生部署
+├── shared/contracts/        # Edge/Training/Pi 共用資料與模型契約
+├── training-host/           # 訓練主機
+├── docker-compose.edge.yml  # Windows Edge 模擬 Compose
+└── README.md
 ```

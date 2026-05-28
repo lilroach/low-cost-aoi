@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api import datasets, training
-from redis import asyncio as aioredis
 import os
 
 app = FastAPI(title="AOI Training Host API", version="0.1.0")
@@ -31,12 +30,13 @@ async def health_check():
     # Test Redis Connection
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
     try:
+        from redis import asyncio as aioredis
         redis = aioredis.from_url(redis_url)
         await redis.ping()
         redis_status = "ok"
     except Exception as e:
         redis_status = f"error: {str(e)}"
-        
+
     return {
         "status": "online",
         "redis": redis_status,

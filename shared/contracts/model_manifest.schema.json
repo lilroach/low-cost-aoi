@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://low-cost-aoi.local/contracts/model_manifest.schema.json",
+  "title": "AOI Hailo Model Manifest",
+  "type": "object",
+  "required": ["model_id", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at", "checksum"],
+  "properties": {
+    "model_id": { "type": "string" },
+    "format": { "type": "string", "const": "hailo-hef" },
+    "source_yolo_model": { "type": "string" },
+    "classes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "input_size": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "postprocess": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "confidence_threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+        "iou_threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "checksum": {
+      "type": "object",
+      "required": ["algorithm", "model_hef"],
+      "properties": {
+        "algorithm": { "type": "string", "const": "sha256" },
+        "model_hef": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
