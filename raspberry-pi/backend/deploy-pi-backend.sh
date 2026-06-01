@@ -10,9 +10,15 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="aoi-edge-backend"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 DATA_DIR="${AOI_EDGE_DATA_DIR:-${APP_DIR}/data}"
-MODEL_DIR="${AOI_EDGE_MODEL_DIR:-${APP_DIR}/models/current}"
+MODEL_DIR="${AOI_EDGE_MODEL_DIR:-${APP_DIR}/models}"
+MODEL_INFERENCE_ENABLED="${AOI_EDGE_MODEL_INFERENCE_ENABLED:-false}"
 TRAINING_HOST_URL="${AOI_TRAINING_HOST_URL:-http://127.0.0.1:8000}"
 MACHINE_ID="${AOI_MACHINE_ID:-raspberry-pi-edge}"
+CAMERA_INDEX="${AOI_CAMERA_INDEX:-0}"
+CAMERA_WIDTH="${AOI_CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${AOI_CAMERA_HEIGHT:-1080}"
+CAMERA_FPS="${AOI_CAMERA_FPS:-30}"
+CAMERA_FOURCC="${AOI_CAMERA_FOURCC:-MJPG}"
 APP_USER="${SUDO_USER:-$(logname 2>/dev/null || echo pi)}"
 APP_GROUP="$(id -gn "${APP_USER}" 2>/dev/null || echo "${APP_USER}")"
 
@@ -25,13 +31,13 @@ fi
 
 echo -e "${YELLOW}安裝系統相依套件...${NC}"
 apt update
-apt install -y python3 python3-venv python3-pip libglib2.0-0 libgl1 python3-hailort || \
-  apt install -y python3 python3-venv python3-pip libglib2.0-0 libgl1
+apt install -y python3 python3-venv python3-pip python3-numpy python3-opencv libglib2.0-0 libgl1 python3-hailort || \
+  apt install -y python3 python3-venv python3-pip python3-numpy python3-opencv libglib2.0-0 libgl1
 usermod -aG video "${APP_USER}" || true
 
 echo -e "${YELLOW}建立 Python 虛擬環境...${NC}"
 if [ ! -d "${APP_DIR}/.venv-pi" ]; then
-  "${PYTHON_BIN}" -m venv "${APP_DIR}/.venv-pi"
+  "${PYTHON_BIN}" -m venv --system-site-packages "${APP_DIR}/.venv-pi"
 fi
 
 "${APP_DIR}/.venv-pi/bin/pip" install --upgrade pip
@@ -52,9 +58,15 @@ User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 Environment=AOI_EDGE_DATA_DIR=${DATA_DIR}
 Environment=AOI_EDGE_MODEL_DIR=${MODEL_DIR}
+Environment=AOI_EDGE_MODEL_INFERENCE_ENABLED=${MODEL_INFERENCE_ENABLED}
 Environment=AOI_TRAINING_HOST_URL=${TRAINING_HOST_URL}
 Environment=AOI_MACHINE_ID=${MACHINE_ID}
-ExecStart=${APP_DIR}/.venv-pi/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Environment=AOI_CAMERA_INDEX=${CAMERA_INDEX}
+Environment=AOI_CAMERA_WIDTH=${CAMERA_WIDTH}
+Environment=AOI_CAMERA_HEIGHT=${CAMERA_HEIGHT}
+Environment=AOI_CAMERA_FPS=${CAMERA_FPS}
+Environment=AOI_CAMERA_FOURCC=${CAMERA_FOURCC}
+ExecStart=${APP_DIR}/.venv-pi/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
 

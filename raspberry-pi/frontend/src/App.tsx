@@ -4,6 +4,7 @@ import ReviewDashboard from './features/review/ReviewDashboard'
 import TeachingView from './features/teaching/TeachingView'
 import RunView from './features/run/RunView'
 import CaptureView from './features/capture/CaptureView'
+import TransferView from './features/transfer/TransferView'
 import { LoginModal } from './components/LoginModal'
 import { MotionControls } from './components/MotionControls'
 import { AppProvider, useApp } from './context/AppContext'
@@ -61,6 +62,9 @@ function AppContent() {
                     )}
                     <button onClick={() => setTab('run')} className={cn("shrink-0 px-4 py-2 rounded-full hover:bg-zinc-800 hover:text-zinc-200 transition-colors", tab === 'run' && "bg-blue-600 text-white shadow-sm shadow-blue-950/40")}>Run</button>
                     <button onClick={() => setTab('review')} className={cn("shrink-0 px-4 py-2 rounded-full hover:bg-zinc-800 hover:text-zinc-200 transition-colors", tab === 'review' && "bg-blue-600 text-white shadow-sm shadow-blue-950/40")}>Review</button>
+                    {userRole === 'engineer' && (
+                        <button onClick={() => setTab('transfer')} className={cn("shrink-0 px-4 py-2 rounded-full hover:bg-zinc-800 hover:text-zinc-200 transition-colors", tab === 'transfer' && "bg-blue-600 text-white shadow-sm shadow-blue-950/40")}>Transfer</button>
+                    )}
 
                     <div className="w-px h-6 bg-zinc-800 mx-1 self-center shrink-0"></div>
                     <button onClick={handleLogout} className="shrink-0 text-zinc-500 hover:text-white text-xs px-3 py-2 rounded-full hover:bg-zinc-800 transition-colors">Logout</button>
@@ -69,9 +73,11 @@ function AppContent() {
 
             <main className="flex-1 p-4 sm:p-5 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 overflow-y-auto lg:overflow-hidden min-h-0">
                 {/* LEFT: Camera & Live Status */}
-                <div className={cn("flex flex-col gap-5 min-h-0", tab === 'capture' ? "lg:col-span-12 h-full" : "lg:col-span-8")}>
+                <div className={cn("flex flex-col gap-5 min-h-0", (tab === 'capture' || tab === 'transfer') ? "lg:col-span-12 h-full" : "lg:col-span-8")}>
                     {tab === 'capture' ? (
                         <CaptureView />
+                    ) : tab === 'transfer' ? (
+                        <TransferView />
                     ) : (
                         <div className="bg-black rounded-2xl border border-zinc-800 overflow-hidden relative aspect-video shadow-2xl shadow-black/40 flex items-center justify-center group">
                             <img src="/api/camera/feed" className="w-full h-full object-contain absolute inset-0" alt="camera feed" />
@@ -141,7 +147,7 @@ function AppContent() {
                 </div>
 
                 {/* RIGHT: Controls */}
-                {tab !== 'capture' && (
+                {tab !== 'capture' && tab !== 'transfer' && (
                     <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
                         <MotionControls />
 

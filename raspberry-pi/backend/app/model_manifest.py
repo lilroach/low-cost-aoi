@@ -36,7 +36,18 @@ def load_model_manifest(model_dir: Path) -> Dict[str, Any]:
 
     _require_keys(
         manifest,
-        ["model_id", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at", "checksum"],
+        [
+            "model_id",
+            "part_no",
+            "version",
+            "format",
+            "source_yolo_model",
+            "classes",
+            "input_size",
+            "postprocess",
+            "created_at",
+            "checksum",
+        ],
         "manifest.json",
     )
     if manifest["format"] != "hailo-hef":

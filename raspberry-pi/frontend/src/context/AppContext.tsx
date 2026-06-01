@@ -7,7 +7,7 @@ interface Program {
 }
 
 interface AppContextType {
-    tab: 'motion' | 'teaching' | 'run' | 'review' | 'capture'
+    tab: 'motion' | 'teaching' | 'run' | 'review' | 'capture' | 'transfer'
     setTab: (tab: any) => void
     userRole: 'engineer' | 'operator' | null
     setUserRole: (role: any) => void
@@ -32,7 +32,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [tab, setTab] = useState<'motion' | 'teaching' | 'run' | 'review' | 'capture'>('motion')
+    const [tab, setTab] = useState<'motion' | 'teaching' | 'run' | 'review' | 'capture' | 'transfer'>('capture')
     const [userRole, setUserRole] = useState<'engineer' | 'operator' | null>(null)
     const [program, setProgram] = useState<Program>({ name: "Untitled", refs: [], points: [] })
     const [progList, setProgList] = useState<any[]>([])

@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 import cv2
 import numpy as np
+import threading
 import time
+from app.config import CAMERA_FOURCC, CAMERA_FPS, CAMERA_HEIGHT, CAMERA_INDEX, CAMERA_WIDTH
 
 router = APIRouter()
 
@@ -94,28 +96,73 @@ class RealCamera:
     """
     Physical camera driver using OpenCV.
     """
-    def __init__(self, index=0):
-        self.cap = cv2.VideoCapture(index)
+    def __init__(self, index=0, width=640, height=480, fps=30, fourcc="MJPG"):
+        self.index = index
+        self.requested_width = width
+        self.requested_height = height
+        self.requested_fps = fps
+        self.requested_fourcc = fourcc
+        self.lock = threading.Lock()
+        self.latest_frame = None
+        self.running = True
+        self.cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
         if not self.cap.isOpened():
             raise RuntimeError(f"Could not open video device {index}")
 
-        # Set common resolution
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        if fourcc:
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc[:4]))
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.cap.set(cv2.CAP_PROP_FPS, fps)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+        self.thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self.thread.start()
+
+        start = time.time()
+        while self.latest_frame is None and time.time() - start < 3:
+            time.sleep(0.05)
+
+    def _capture_loop(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if ret:
+                with self.lock:
+                    self.latest_frame = frame
+            else:
+                time.sleep(0.05)
 
     def get_frame(self):
-        ret, frame = self.cap.read()
-        if not ret:
-            # Return a black frame if read fails
-            return np.zeros((480, 640, 3), np.uint8)
-        return frame
+        with self.lock:
+            if self.latest_frame is not None:
+                return self.latest_frame.copy()
+        # Return a black frame until the first camera frame arrives.
+        return np.zeros((480, 640, 3), np.uint8)
 
     def flush_buffer(self):
-        # Read and discard a few frames
-        for _ in range(5):
-            self.cap.read()
+        time.sleep(0.1)
+
+    def status(self):
+        return {
+            "mode": "real",
+            "index": self.index,
+            "requested": {
+                "width": self.requested_width,
+                "height": self.requested_height,
+                "fps": self.requested_fps,
+                "fourcc": self.requested_fourcc,
+            },
+            "actual": {
+                "width": int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                "height": int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                "fps": self.cap.get(cv2.CAP_PROP_FPS),
+                "fourcc": int(self.cap.get(cv2.CAP_PROP_FOURCC)),
+            },
+            "has_frame": self.latest_frame is not None,
+        }
 
     def __del__(self):
+        self.running = False
         if hasattr(self, 'cap'):
             self.cap.release()
 
@@ -123,9 +170,17 @@ class RealCamera:
 def initialize_camera():
     print("Initializing camera unit...")
     try:
-        # Try to open real camera 0 (usually /dev/video0 in Linux container)
-        driver = RealCamera(0)
-        print("Camera initialized: [REAL] Physical hardware detected.")
+        driver = RealCamera(
+            index=CAMERA_INDEX,
+            width=CAMERA_WIDTH,
+            height=CAMERA_HEIGHT,
+            fps=CAMERA_FPS,
+            fourcc=CAMERA_FOURCC,
+        )
+        print(
+            "Camera initialized: [REAL] Physical hardware detected. "
+            f"index={CAMERA_INDEX} size={CAMERA_WIDTH}x{CAMERA_HEIGHT} fps={CAMERA_FPS} fourcc={CAMERA_FOURCC}"
+        )
         return driver
     except Exception as e:
         print(f"Camera warning: {e}")
@@ -133,6 +188,12 @@ def initialize_camera():
         return MockCamera()
 
 camera_driver = initialize_camera()
+
+@router.get("/status")
+async def camera_status():
+    if hasattr(camera_driver, "status"):
+        return camera_driver.status()
+    return {"mode": "mock", "has_frame": True}
 
 def get_latest_frame():
     """Returns the current Opencv frame"""

@@ -3,9 +3,11 @@
   "$id": "https://low-cost-aoi.local/contracts/model_manifest.schema.json",
   "title": "AOI Hailo Model Manifest",
   "type": "object",
-  "required": ["model_id", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at", "checksum"],
+  "required": ["model_id", "part_no", "version", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at", "checksum"],
   "properties": {
     "model_id": { "type": "string" },
+    "part_no": { "type": "string" },
+    "version": { "type": "string" },
     "format": { "type": "string", "const": "hailo-hef" },
     "source_yolo_model": { "type": "string" },
     "classes": {

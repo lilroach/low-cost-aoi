@@ -21,9 +21,23 @@ Thumbs.db
 # Project Data (Avoid committing large datasets/history)
 **/data/history/
 **/data/images/
+**/data/datasets/
+**/data/export/
+**/data/media/
+**/data/validation-datasets/
 **/data/*.db
 **/data/*.sqlite
+**/data/*.sqlite3
 **/app/data/
+runs/
+YOLO/
+訓練照片/
+training-host/models/
+*.pt
+*.onnx
+*.hef
+*.engine
+*.zip
 
 # IDE
 .vscode/
@@ -37,3 +51,7 @@ temp/
 
 # Exclude unrelated tools
 novel-helper/
+.agents/
+.obsidian/
+.od-skills/
+Excalidraw/
