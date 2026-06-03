@@ -4,7 +4,20 @@
 > 幣別: 新台幣 TWD；美元品項以 `1 USD ~= NT$31.46` 暫估。  
 > 定位: 第一版以 Raspberry Pi 5 4GB 實機完成取像、資料回收與人工覆判；後續再逐步導入邊緣 AI 推論與移動平台。
 
-## 1. 方案原理
+## 1. 各階段任務
+
+本專案採四階段推進，避免同時導入相機、AI、移動平台與訓練流程而增加除錯難度。每一階段都要能獨立驗證，並能把成果交給下一階段使用。
+
+| 階段 | 任務重點 | 主要交付 |
+| :--- | :--- | :--- |
+| Phase 1: 架構與訓練環境 | 建立 `training-host/`、`windows-edge-simulator/`、`raspberry-pi/` 三環境；完成 UI/API 雛形、資料契約與 YOLO 訓練流程。 | Training Host、Windows Edge Simulator、基礎 Edge UI/API、資料/模型契約。 |
+| Phase 2: Raspberry Pi 截圖部署 | 將 Raspberry Pi 實機部署成可用 Edge；完成相機取像、截圖保存、人工 OK / NG、Export / Transfer 與模型包管理入口。 | Pi backend / frontend、camera status、Capture UI、人工覆判、資料回收 ZIP。 |
+| Phase 3: 邊緣辨識流程 | 在 Pi 上導入 Hailo / YOLO 推論；支援模型選擇、模型包安裝、熱切換、截圖後辨識與辨識錯誤回收。 | 可部署模型包、Edge 推論結果、人工覆判比對、可再訓練資料。 |
+| Phase 4: 移動平台整合 | 導入 CoreXY / Klipper / Moonraker，完成多點位自動掃描、移動控制、拍照、推論與 run bundle 報告。 | 自動掃描流程、座標與圖片紀錄、檢測報告、Training Host 回收資料。 |
+
+目前實際進度位於 **Phase 2: Raspberry Pi 截圖部署**。現階段優先把 Pi 取像、資料保存、人工覆判與資料回收流程穩定下來；AI 推論與移動平台分別放在 Phase 3 與 Phase 4。
+
+## 2. 方案原理
 
 本方案以低成本邊緣裝置取代傳統大型 AOI 設備，將 PCB 檢測拆成「取像、資料管理、模型訓練、邊緣辨識、移動掃描」五個可分階段驗證的模組。
 
@@ -20,7 +33,7 @@
 
 設計重點是先讓資料閉環成立: Raspberry Pi 拍照並保存結果，人工覆判產生可訓練資料，Training Host 訓練後再把模型包送回 Edge。等模型與相機流程穩定後，才讓移動平台加入自動掃描。
 
-## 2. 預計達成效果
+## 3. 預計達成效果
 
 | 目標 | 預計效果 | 驗收方式 |
 | :--- | :--- | :--- |
@@ -32,7 +45,7 @@
 
 第一版不追求商用 AOI 的高速產線節拍、3D AOI 或 MES / SMEMA 整合；重點是用較低成本建立可驗證、可迭代、可回收資料的 AOI 原型。
 
-## 3. 現階段進度
+## 4. 現階段進度
 
 目前狀態屬於 Phase 2: Raspberry Pi 截圖部署，且已完成多項實機驗證。
 
@@ -54,7 +67,7 @@
 - Phase 4 的 CoreXY 移動平台、Klipper / Moonraker 串接、自動掃描流程尚未導入。
 - 光源、鏡頭倍率、工作距離與實際 PCB 缺陷樣本仍需實測定版。
 
-## 4. 最新硬體價格更新
+## 5. 最新硬體價格更新
 
 價格為 2026-06-03 線上查詢結果。Raspberry Pi 相關品項近期受記憶體價格上漲影響，Raspberry Pi 官方於 2026-02-02 公告 4GB 產品增加 US$15、8GB 增加 US$30、16GB 增加 US$60，因此舊版 2026-01-13 BOM 中 Raspberry Pi 5 4GB 的 NT$3,200 已偏低。
 
@@ -78,7 +91,7 @@
 | Phase 4 自動掃描版 | Phase 3 + SKR Pico、CoreXY 機構、馬達、皮帶、拖鏈、限位、24V 電源。 | 約 NT$18,000 到 NT$23,500 |
 | USB3 工業相機版 | Phase 4 改採 USB3 工業 IMX296 相機。 | 約 NT$21,500 到 NT$27,000 |
 
-## 5. 建議下一步
+## 6. 建議下一步
 
 1. 先固定 Phase 2 實機流程: camera status、snap、人工 OK / NG、Export / Transfer 都要能穩定重複操作。
 2. 補足光源與鏡頭測試樣本，建立至少一批 OK / NG 圖片資料集。
