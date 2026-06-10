@@ -1,0 +1,37 @@
+{
+  "intervalMs": 2200,
+  "images": [
+    {
+      "src": "/sim-camera/images/726579.jpg",
+      "name": "726579.jpg"
+    },
+    {
+      "src": "/sim-camera/images/726580.jpg",
+      "name": "726580.jpg"
+    },
+    {
+      "src": "/sim-camera/images/738646.jpg",
+      "name": "738646.jpg"
+    },
+    {
+      "src": "/sim-camera/images/738647.jpg",
+      "name": "738647.jpg"
+    },
+    {
+      "src": "/sim-camera/images/S__1444061187.jpg",
+      "name": "S__1444061187.jpg"
+    },
+    {
+      "src": "/sim-camera/images/S__1447911436.jpg",
+      "name": "S__1447911436.jpg"
+    },
+    {
+      "src": "/sim-camera/images/S__1447911437.jpg",
+      "name": "S__1447911437.jpg"
+    },
+    {
+      "src": "/sim-camera/images/S__7503937.jpg",
+      "name": "S__7503937.jpg"
+    }
+  ]
+}

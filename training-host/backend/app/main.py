@@ -3,11 +3,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api import datasets, training
 import os
+from pathlib import Path
 
 app = FastAPI(title="AOI Training Host API", version="0.1.0")
 
+
+def _default_app_root() -> Path:
+    docker_root = Path("/app")
+    if os.name != "nt" and ((docker_root / "app").exists() or (docker_root / "data").exists()):
+        return docker_root
+    current_file = Path(__file__).resolve()
+    if current_file.parents[1].name == "backend":
+        return current_file.parents[2]
+    return current_file.parents[1]
+
+
+APP_ROOT = Path(os.getenv("AOI_TRAINING_APP_ROOT", str(_default_app_root())))
+DATA_DIR = Path(os.getenv("AOI_TRAINING_DATA_DIR", str(APP_ROOT / "data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 # Mount static files to view images
-app.mount("/api/data", StaticFiles(directory="/app/data"), name="data")
+app.mount("/api/data", StaticFiles(directory=str(DATA_DIR)), name="data")
 
 # CORS Settings
 app.add_middleware(
@@ -23,22 +39,19 @@ app.include_router(training.router, prefix="/api")
 
 @app.get("/api/health")
 async def root():
-    return {"message": "AOI Training Host API is running", "docs": "/docs"}
+    return {
+        "status": "online",
+        "message": "AOI Training Host API is running",
+        "docs": "/docs",
+        "deployment": "terminal",
+        "data_dir": str(DATA_DIR),
+    }
 
 @app.get("/health")
 async def health_check():
-    # Test Redis Connection
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
-    try:
-        from redis import asyncio as aioredis
-        redis = aioredis.from_url(redis_url)
-        await redis.ping()
-        redis_status = "ok"
-    except Exception as e:
-        redis_status = f"error: {str(e)}"
-
     return {
         "status": "online",
-        "redis": redis_status,
-        "gpu_available": "TODO: Check CUDA"
+        "deployment": "terminal",
+        "data_dir": str(DATA_DIR),
+        "gpu_available": "checked by ultralytics/torch at training time",
     }

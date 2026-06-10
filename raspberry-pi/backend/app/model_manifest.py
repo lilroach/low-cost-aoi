@@ -24,12 +24,9 @@ def _sha256(path: Path) -> str:
 
 def load_model_manifest(model_dir: Path) -> Dict[str, Any]:
     manifest_path = model_dir / "manifest.json"
-    hef_path = model_dir / "model.hef"
 
     if not manifest_path.exists():
         raise ModelManifestError(f"Missing model manifest: {manifest_path}")
-    if not hef_path.exists():
-        raise ModelManifestError(f"Missing Hailo model file: {hef_path}")
 
     with open(manifest_path, "r", encoding="utf-8") as file:
         manifest = json.load(file)
@@ -46,17 +43,33 @@ def load_model_manifest(model_dir: Path) -> Dict[str, Any]:
             "input_size",
             "postprocess",
             "created_at",
-            "checksum",
         ],
         "manifest.json",
     )
-    if manifest["format"] != "hailo-hef":
-        raise ModelManifestError("manifest format must be hailo-hef")
     if not isinstance(manifest["classes"], list) or not manifest["classes"]:
         raise ModelManifestError("manifest classes must be a non-empty list")
     if not isinstance(manifest["input_size"], list) or len(manifest["input_size"]) != 2:
         raise ModelManifestError("manifest input_size must be [width, height]")
 
+    model_format = manifest["format"]
+    if model_format == "hailo-hef":
+        _validate_hailo_manifest(model_dir, manifest)
+    elif model_format == "ultralytics-pt":
+        _validate_ultralytics_manifest(model_dir, manifest)
+    else:
+        raise ModelManifestError("manifest format must be hailo-hef or ultralytics-pt")
+
+    manifest["runtime_compatible"] = model_format == "hailo-hef"
+
+    return manifest
+
+
+def _validate_hailo_manifest(model_dir: Path, manifest: Dict[str, Any]) -> None:
+    hef_path = model_dir / "model.hef"
+    if not hef_path.exists():
+        raise ModelManifestError(f"Missing Hailo model file: {hef_path}")
+
+    _require_keys(manifest, ["checksum"], "manifest.json")
     checksum = manifest["checksum"]
     _require_keys(checksum, ["algorithm", "model_hef"], "manifest checksum")
     if checksum["algorithm"] != "sha256":
@@ -66,4 +79,13 @@ def load_model_manifest(model_dir: Path) -> Dict[str, Any]:
     if actual.lower() != checksum["model_hef"].lower():
         raise ModelManifestError("model.hef checksum mismatch")
 
-    return manifest
+
+def _validate_ultralytics_manifest(model_dir: Path, manifest: Dict[str, Any]) -> None:
+    _require_keys(manifest, ["weights", "weights_sha256"], "manifest.json")
+    weights_path = model_dir / manifest["weights"]
+    if not weights_path.exists():
+        raise ModelManifestError(f"Missing weights file: {weights_path}")
+
+    actual = _sha256(weights_path)
+    if actual.lower() != manifest["weights_sha256"].lower():
+        raise ModelManifestError(f"{manifest['weights']} checksum mismatch")

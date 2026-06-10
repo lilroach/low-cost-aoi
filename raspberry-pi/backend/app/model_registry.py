@@ -79,6 +79,11 @@ class ModelRegistry:
                 raise ModelRegistryError("Model bundle not found")
             if model["status"] != "valid":
                 raise ModelRegistryError(f"Model bundle is not valid: {model.get('error')}")
+            if not model.get("runtime_compatible", False):
+                model_format = model.get("format") or model.get("manifest", {}).get("format", "unknown")
+                raise ModelRegistryError(
+                    f"Model bundle is not compatible with Raspberry Pi inference runtime: {model_format}"
+                )
 
             manifest = model["manifest"]
             part_no = manifest["part_no"]
@@ -131,6 +136,8 @@ class ModelRegistry:
                 "model_id": manifest["model_id"],
                 "part_no": manifest["part_no"],
                 "version": manifest["version"],
+                "format": manifest["format"],
+                "runtime_compatible": manifest.get("runtime_compatible", manifest["format"] == "hailo-hef"),
                 "status": "valid",
                 "path": str(model_dir),
                 "manifest": manifest,

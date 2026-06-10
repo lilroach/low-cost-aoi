@@ -1,0 +1,16 @@
+{
+  "model_id": "testv1-yolo11-smoke",
+  "part_no": "testv1",
+  "version": "smoke",
+  "format": "ultralytics-pt",
+  "source_yolo_model": "yolo11n.pt",
+  "weights": "best.pt",
+  "classes": ["122", "123", "124", "殘肉", "毛絲"],
+  "input_size": [640, 640],
+  "postprocess": {
+    "type": "yolo11",
+    "confidence_threshold": 0.25,
+    "iou_threshold": 0.45
+  },
+  "created_at": "2026-05-29T12:42:53+08:00"
+}

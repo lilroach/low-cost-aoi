@@ -52,13 +52,16 @@ def _get_model(model_id: str):
     if not model or model["status"] != "valid":
         return None
     manifest = model["manifest"]
+    runtime_compatible = model.get("runtime_compatible", manifest.get("format") == "hailo-hef")
     return {
         "id": model["model_id"],
         "name": f"{manifest['part_no']} {model['model_id']}",
         "version": manifest["version"],
         "part_no": manifest["part_no"],
-        "enabled": MODEL_INFERENCE_ENABLED,
-        "locked": not MODEL_INFERENCE_ENABLED,
+        "format": manifest["format"],
+        "enabled": MODEL_INFERENCE_ENABLED and runtime_compatible,
+        "locked": not MODEL_INFERENCE_ENABLED or not runtime_compatible,
+        "runtime_compatible": runtime_compatible,
     }
 
 
@@ -173,13 +176,16 @@ async def list_capture_models():
         if model["status"] != "valid":
             continue
         manifest = model["manifest"]
+        runtime_compatible = model.get("runtime_compatible", manifest.get("format") == "hailo-hef")
         models.append({
             "id": model["model_id"],
             "name": f"{manifest['part_no']} {model['model_id']}",
             "version": manifest["version"],
             "part_no": manifest["part_no"],
-            "enabled": MODEL_INFERENCE_ENABLED,
-            "locked": not MODEL_INFERENCE_ENABLED,
+            "format": manifest["format"],
+            "enabled": MODEL_INFERENCE_ENABLED and runtime_compatible,
+            "locked": not MODEL_INFERENCE_ENABLED or not runtime_compatible,
+            "runtime_compatible": runtime_compatible,
         })
     return {"models": models, "active": registry.load_active(), "inference_enabled": MODEL_INFERENCE_ENABLED}
 

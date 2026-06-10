@@ -6,6 +6,8 @@ type ModelItem = {
     model_id: string
     part_no?: string
     version?: string
+    format?: string
+    runtime_compatible?: boolean
     status: 'valid' | 'invalid'
     error?: string
     path?: string
@@ -281,6 +283,7 @@ export default function TransferView() {
                                 <th className="px-3 py-3">Model</th>
                                 <th className="px-3 py-3">Part</th>
                                 <th className="px-3 py-3">Version</th>
+                                <th className="px-3 py-3">Format</th>
                                 <th className="px-3 py-3">Status</th>
                                 <th className="px-3 py-3 text-right">Active</th>
                             </tr>
@@ -288,25 +291,27 @@ export default function TransferView() {
                         <tbody className="divide-y divide-zinc-800">
                             {!modelSnapshot?.models.length && (
                                 <tr>
-                                    <td className="px-3 py-6 text-center text-zinc-500" colSpan={5}>No model bundles installed.</td>
+                                    <td className="px-3 py-6 text-center text-zinc-500" colSpan={6}>No model bundles installed.</td>
                                 </tr>
                             )}
                             {modelSnapshot?.models.map((model) => {
                                 const isActive = model.part_no ? modelSnapshot.active?.[model.part_no] === model.model_id : false
+                                const canActivate = model.status === 'valid' && model.runtime_compatible !== false
                                 return (
                                     <tr key={model.model_id} className="bg-zinc-900/60">
                                         <td className="px-3 py-3 font-mono text-xs text-zinc-200">{model.model_id}</td>
                                         <td className="px-3 py-3 text-zinc-300">{model.part_no ?? '-'}</td>
                                         <td className="px-3 py-3 text-zinc-400">{model.version ?? '-'}</td>
+                                        <td className="px-3 py-3 text-xs text-zinc-400">{model.format ?? '-'}</td>
                                         <td className="px-3 py-3">
                                             <span className={cn('rounded-md px-2 py-1 text-xs font-bold',
-                                                model.status === 'valid' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'
+                                                model.status === 'valid' && model.runtime_compatible !== false ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'
                                             )}>
-                                                {model.status}
+                                                {model.status === 'valid' && model.runtime_compatible === false ? 'incompatible' : model.status}
                                             </span>
                                         </td>
                                         <td className="px-3 py-3 text-right">
-                                            {model.status === 'valid' ? (
+                                            {canActivate ? (
                                                 <button
                                                     onClick={() => activateModel(model.model_id)}
                                                     disabled={isActive || Boolean(busy)}
@@ -319,7 +324,9 @@ export default function TransferView() {
                                                     {busy === `activate-${model.model_id}` ? 'Updating' : isActive ? 'Active' : 'Set Active'}
                                                 </button>
                                             ) : (
-                                                <span className="text-xs text-zinc-600">{model.error ?? 'Invalid'}</span>
+                                                <span className="text-xs text-zinc-600">
+                                                    {model.runtime_compatible === false ? 'Convert to Hailo HEF' : model.error ?? 'Invalid'}
+                                                </span>
                                             )}
                                         </td>
                                     </tr>

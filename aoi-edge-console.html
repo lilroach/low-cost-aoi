@@ -1,0 +1,1123 @@
+
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AOI Edge Console Pro - SMT Inspection System</title>
+  <style>
+    /* 工業控制台專用視覺系統 - 無反光防眩黑、鈦灰、戰術高對比色 */
+    :root {
+      --bg-darker: oklch(13% 0.01 250);     /* 邊緣背景 - 極深無光澤黑 */
+      --bg-main: oklch(16% 0.015 250);     /* 主控制台背景 */
+      --surface: oklch(21% 0.02 250);      /* 卡片表面 */
+      --surface-hover: oklch(25% 0.025 250);/* 滑過狀態 */
+      --border: oklch(32% 0.02 250);       /* 一般框線 */
+      --border-focus: oklch(50% 0.08 220); /* 聚焦/選取框線 */
+      
+      /* 功能訊號色 */
+      --cyber-blue: oklch(68% 0.16 220);   /* 系統主色 (青藍色) */
+      --pass-green: oklch(72% 0.18 140);   /* 檢測 PASS 綠 */
+      --pass-bg: oklch(22% 0.06 140);
+      --fail-red: oklch(60% 0.22 25);      /* 檢測 FAIL 紅 */
+      --fail-bg: oklch(18% 0.06 25);
+      --warn-amber: oklch(75% 0.17 75);    /* 系統警告黃 */
+      --warn-bg: oklch(21% 0.05 75);
+      
+      /* 文字顏色 */
+      --fg-high: oklch(95% 0.005 250);     /* 高對比主字 */
+      --fg-med: oklch(80% 0.01 250);       /* 一般說明 */
+      --fg-muted: oklch(55% 0.015 250);    /* 次要/靜態標籤 */
+      
+      /* 字型 stack */
+      --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-darker);
+      color: var(--fg-med);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* 頂部系統列 - 鈦金灰色調 */
+    .system-header {
+      background-color: var(--bg-main);
+      border-bottom: 2px solid var(--border);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 10;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo .logo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--cyber-blue);
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--bg-darker);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .brand-logo h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--fg-high);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-logo .station-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--surface);
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--cyber-blue);
+    }
+
+    /* 主功能切換 Tabs */
+    .mode-navigation {
+      display: flex;
+      height: 100%;
+      margin-left: 40px;
+    }
+
+    .mode-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 24px;
+      color: var(--fg-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      border-left: 1px solid transparent;
+      border-right: 1px solid transparent;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+    }
+
+    .mode-tab:hover {
+      color: var(--fg-high);
+      background-color: var(--surface);
+    }
+
+    .mode-tab.active {
+      color: var(--fg-high);
+      background-color: var(--surface);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    .mode-tab.active::after {
+      background: var(--cyber-blue);
+    }
+
+    .mode-tab .shortcut-key {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      background: var(--bg-darker);
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* 頂部右側狀態資訊 */
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      background: var(--surface);
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--fg-muted);
+    }
+
+    .status-dot.online {
+      background: var(--pass-green);
+      box-shadow: 0 0 8px var(--pass-green);
+    }
+
+    .header-time {
+      font-family: var(--font-mono);
+      color: var(--fg-high);
+      font-size: 13px;
+    }
+
+    .estop-button {
+      background: var(--fail-red);
+      color: white;
+      border: none;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+      transition: all 0.1s ease;
+    }
+
+    .estop-button:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 2px rgba(220, 38, 38, 0.4);
+    }
+
+    /* 主畫面容器 */
+    .main-viewport {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 每個獨立畫面面板 */
+    .view-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none; /* 由 JS 切換 */
+      grid-template-columns: 320px 1fr 360px;
+      background-color: var(--bg-darker);
+    }
+
+    .view-panel.active {
+      display: grid;
+    }
+
+    /* 模組卡片與基礎間距 */
+    .panel-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel-column:last-child {
+      border-right: none;
+    }
+
+    .panel-card {
+      background-color: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: var(--surface);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--fg-high);
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-action {
+      font-size: 11px;
+      color: var(--cyber-blue);
+      cursor: pointer;
+    }
+
+    .card-body {
+      padding: 14px;
+      flex: 1;
+    }
+
+    /* ---------------------------------------------------
+       RUN 運作頁樣式
+    --------------------------------------------------- */
+    /* 左側：統計與狀態列 */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-tile.wide {
+      grid-column: span 2;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--fg-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--fg-high);
+    }
+
+    .stat-value.yield {
+      color: var(--pass-green);
+      font-size: 26px;
+    }
+
+    /* 檢測比例長條圖 */
+    .defect-bar-wrapper {
+      margin-top: 8px;
+    }
+    .bar-container {
+      height: 8px;
+      background: var(--bg-darker);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+    .bar-segment {
+      height: 100%;
+    }
+    .bar-pass { background: var(--pass-green); }
+    .bar-fail { background: var(--fail-red); }
+
+    .defect-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      margin-top: 4px;
+      color: var(--fg-muted);
+    }
+
+    /* 硬體狀態燈號 */
+    .hardware-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .hardware-row .hw-name {
+      font-family: var(--font-mono);
+      color: var(--fg-med);
+    }
+
+    .hw-tag {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-darker);
+    }
+
+    .hw-tag.ok { color: var(--pass-green); border: 1px solid var(--pass-green); }
+    .hw-tag.err { color: var(--fail-red); border: 1px solid var(--fail-red); }
+
+    /* 中間：實時影像與掃描 */
+    .live-feed-container {
+      flex: 1;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 高精密 PCB SVG */
+    .pcb-canvas {
+      width: 90%;
+      height: 90%;
+      transition: all 0.3s ease;
+    }
+
+    /* 雷射掃描線動態效果 */
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(180deg, rgba(0, 240, 255, 0) 0%, rgba(0, 240, 255, 0.8) 50%, rgba(0, 240, 255, 0) 100%);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+      z-index: 5;
+      pointer-events: none;
+      display: none;
+    }
+
+    .scanning .scan-line {
+      display: block;
+      animation: scanEffect 1.8s infinite linear;
+    }
+
+    @keyframes scanEffect {
+      0% { top: 0%; }
+      50% { top: 100%; }
+      100% { top: 0%; }
+    }
+
+    .camera-overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(16, 16, 16, 0.85);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* 局部 ROI 偵測標註 */
+    .roi-box {
+      position: absolute;
+      border: 2px solid var(--pass-green);
+      background: rgba(52, 211, 153, 0.1);
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .roi-box.fail {
+      border-color: var(--fail-red);
+      background: rgba(220, 38, 38, 0.1);
+      box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    }
+
+    .scanning .roi-box {
+      opacity: 1;
+    }
+
+    .roi-label {
+      position: absolute;
+      top: -18px;
+      left: -2px;
+      background: var(--pass-green);
+      color: #000;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: bold;
+      padding: 1px 4px;
+      white-space: nowrap;
+    }
+
+    .roi-box.fail .roi-label {
+      background: var(--fail-red);
+      color: #fff;
+    }
+
+    /* 右側：巨型防呆狀態看板與控制 */
+    .big-status-panel {
+      background-color: var(--bg-main);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      transition: all 0.2s ease;
+    }
+
+    .big-status-panel.pass {
+      border-color: var(--pass-green);
+      background-color: var(--pass-bg);
+    }
+
+    .big-status-panel.fail {
+      border-color: var(--fail-red);
+      background-color: var(--fail-bg);
+    }
+
+    .big-status-label {
+      font-size: 11px;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .big-status-value {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin: 4px 0;
+      font-family: var(--font-sans);
+    }
+
+    .big-status-panel.pass .big-status-value { color: var(--pass-green); text-shadow: 0 0 15px rgba(52, 211, 153, 0.4); }
+    .big-status-panel.fail .big-status-value { color: var(--fail-red); text-shadow: 0 0 15px rgba(220, 38, 38, 0.4); }
+
+    .board-info-row {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--fg-high);
+      margin-top: 6px;
+    }
+
+    /* 控制按鈕組 */
+    .control-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .action-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--fg-high);
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--cyber-blue);
+    }
+
+    .action-btn.primary {
+      background: var(--cyber-blue);
+      color: var(--bg-darker);
+      border: none;
+    }
+
+    .action-btn.primary:hover {
+      background: oklch(75% 0.14 220);
+    }
+
+    .action-btn.primary.active-run {
+      background: var(--warn-amber);
+      color: var(--bg-darker);
+    }
+
+    /* 工業診斷日誌 */
+    .terminal-log {
+      background: #080808;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #ccc;
+      height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+
+    .log-time {
+      color: var(--fg-muted);
+      flex: 0 0 auto;
+    }
+
+    .log-info { color: var(--cyber-blue); }
+    .log-pass { color: var(--pass-green); }
+    .log-warn { color: var(--warn-amber); }
+    .log-fail { color: var(--fail-red); }
+
+    .metric-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .metric-card .label {
+      color: var(--fg-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .metric-card .value {
+      color: var(--fg-high);
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .metric-card .sub {
+      color: var(--fg-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .program-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .program-table th,
+    .program-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 9px 6px;
+      text-align: left;
+    }
+
+    .program-table th {
+      color: var(--fg-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .program-table td {
+      color: var(--fg-med);
+      font-family: var(--font-mono);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .pill.pass {
+      color: var(--pass-green);
+      background: color-mix(in oklch, var(--pass-green) 14%, transparent);
+      border-color: color-mix(in oklch, var(--pass-green) 45%, var(--border));
+    }
+
+    .pill.fail {
+      color: var(--fail-red);
+      background: color-mix(in oklch, var(--fail-red) 14%, transparent);
+      border-color: color-mix(in oklch, var(--fail-red) 45%, var(--border));
+    }
+
+    .pill.warn {
+      color: var(--warn-amber);
+      background: color-mix(in oklch, var(--warn-amber) 14%, transparent);
+      border-color: color-mix(in oklch, var(--warn-amber) 45%, var(--border));
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--fg-med);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .console-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr) 340px;
+      gap: 12px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .left-rail,
+    .right-rail,
+    .inspection-stage {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .panel {
+      background-color: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-header h2 {
+      color: var(--fg-high);
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .panel-code {
+      color: var(--cyber-blue);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .panel > .metric-stack,
+    .panel > .control-btn-grid,
+    .panel > .terminal-log,
+    .panel > .program-table {
+      margin: 12px;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status-tile {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      min-width: 0;
+    }
+
+    .status-tile .label {
+      display: block;
+      color: var(--fg-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status-tile .value {
+      display: block;
+      color: var(--fg-high);
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .camera-frame {
+      position: relative;
+      min-height: 560px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--cyber-blue) 10%, transparent), transparent 40%),
+        #05080b;
+    }
+
+    .camera-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--cyber-blue) 14%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--cyber-blue) 14%, transparent) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+    }
+
+    .pcb-board {
+      position: absolute;
+      inset: 12% 10%;
+      border: 2px solid color-mix(in oklch, var(--pass-green) 48%, var(--border));
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, oklch(24% 0.045 165), oklch(16% 0.035 165));
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--pass-green) 24%, transparent);
+    }
+
+    .pcb-trace,
+    .component {
+      position: absolute;
+      border-radius: 3px;
+    }
+
+    .pcb-trace {
+      background: color-mix(in oklch, var(--warn-amber) 52%, transparent);
+      height: 4px;
+    }
+
+    .pcb-trace.t1 { left: 10%; top: 32%; width: 72%; }
+    .pcb-trace.t2 { left: 22%; top: 52%; width: 58%; }
+    .pcb-trace.t3 { left: 14%; top: 72%; width: 68%; }
+
+    .component {
+      background: oklch(72% 0.025 250);
+      border: 1px solid oklch(86% 0.01 250);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .component.c1 { left: 20%; top: 26%; width: 80px; height: 42px; }
+    .component.c2 { left: 58%; top: 36%; width: 110px; height: 48px; }
+    .component.c3 { left: 36%; top: 62%; width: 140px; height: 34px; }
+    .component.c4 { left: 72%; top: 68%; width: 54px; height: 54px; }
+
+    .camera-overlay {
+      position: absolute;
+      z-index: 3;
+      color: var(--fg-high);
+      background: rgba(0, 0, 0, 0.58);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .camera-overlay.top-left { top: 12px; left: 12px; }
+    .camera-overlay.top-right { top: 12px; right: 12px; }
+    .camera-overlay.bottom-left { bottom: 12px; left: 12px; }
+
+    @media (max-width: 1180px) {
+      .console-grid {
+        grid-template-columns: 260px minmax(0, 1fr);
+      }
+
+      .right-rail {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
+      .system-header {
+        height: auto;
+        min-height: 56px;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .console-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+
+      .status-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .camera-frame {
+        min-height: 360px;
+      }
+
+      .right-rail {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="system-header">
+    <div class="brand-logo">
+      <div class="logo-icon">A</div>
+      <div>
+        <h1>AOI Edge Console</h1>
+        <span>SMT Inspection Station</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <span class="status-dot online"></span>
+      <span>EDGE-PI-01</span>
+      <span>CAM READY</span>
+      <span>2026-05-28 11:52</span>
+    </div>
+  </header>
+
+  <main class="console-grid">
+    <aside class="left-rail">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>目前工單</h2>
+          <span class="panel-code">RUN</span>
+        </div>
+        <div class="metric-stack">
+          <div class="metric-card">
+            <div class="label">Program</div>
+            <div class="value">V100</div>
+            <div class="sub">LOT999 / rev. A58K105</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">Yield</div>
+            <div class="value">98.4%</div>
+            <div class="sub">246 PASS / 4 FAIL</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">Cycle</div>
+            <div class="value">1.84s</div>
+            <div class="sub">last capture to decision</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>檢測項目</h2>
+          <span class="panel-code">ROI</span>
+        </div>
+        <table class="program-table">
+          <thead>
+            <tr><th>ID</th><th>Rule</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R01</td><td>Presence</td><td><span class="pill pass">PASS</span></td></tr>
+            <tr><td>R02</td><td>Offset X/Y</td><td><span class="pill pass">PASS</span></td></tr>
+            <tr><td>R03</td><td>Polarity</td><td><span class="pill warn">CHECK</span></td></tr>
+            <tr><td>R04</td><td>Solder bridge</td><td><span class="pill pass">PASS</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </aside>
+
+    <section class="inspection-stage">
+      <div class="status-strip">
+        <div class="status-tile">
+          <span class="label">Camera</span>
+          <span class="value">1920x1080</span>
+        </div>
+        <div class="status-tile">
+          <span class="label">Model</span>
+          <span class="value">YOLOv8n</span>
+        </div>
+        <div class="status-tile">
+          <span class="label">Lighting</span>
+          <span class="value">72%</span>
+        </div>
+        <div class="status-tile">
+          <span class="label">Motion</span>
+          <span class="value">Locked</span>
+        </div>
+      </div>
+
+      <div class="camera-frame" aria-label="AOI camera preview">
+        <div class="camera-grid"></div>
+        <div class="pcb-board">
+          <div class="pcb-trace t1"></div>
+          <div class="pcb-trace t2"></div>
+          <div class="pcb-trace t3"></div>
+          <div class="component c1"></div>
+          <div class="component c2"></div>
+          <div class="component c3"></div>
+          <div class="component c4"></div>
+          <div class="roi-box pass" style="left: 18%; top: 24%; width: 18%; height: 16%;">
+            <span class="roi-label">R01 PASS</span>
+          </div>
+          <div class="roi-box fail" style="left: 58%; top: 35%; width: 22%; height: 18%;">
+            <span class="roi-label">R03 CHECK</span>
+          </div>
+          <div class="roi-box pass" style="left: 34%; top: 62%; width: 28%; height: 14%;">
+            <span class="roi-label">R04 PASS</span>
+          </div>
+        </div>
+        <div class="camera-overlay top-left">LIVE / 36 FPS</div>
+        <div class="camera-overlay top-right">EXPOSURE 8.5ms</div>
+        <div class="camera-overlay bottom-left">X 124.20 / Y 088.40</div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>診斷日誌</h2>
+          <span class="panel-code">TRACE</span>
+        </div>
+        <div class="terminal-log" id="terminalLog">
+          <div class="log-line"><span class="log-time">11:49:10.218</span><span class="log-info">capture queued from station EDGE-PI-01</span></div>
+          <div class="log-line"><span class="log-time">11:49:10.744</span><span class="log-pass">R01 presence confidence 0.982</span></div>
+          <div class="log-line"><span class="log-time">11:49:11.003</span><span class="log-pass">R02 offset within tolerance +0.04mm</span></div>
+          <div class="log-line"><span class="log-time">11:49:11.284</span><span class="log-warn">R03 polarity requires operator review</span></div>
+          <div class="log-line"><span class="log-time">11:49:11.392</span><span class="log-info">decision published to /api/capture/latest</span></div>
+        </div>
+      </section>
+    </section>
+
+    <aside class="right-rail">
+      <section class="big-status-panel pass" id="decisionPanel">
+        <div class="big-status-label">Current Decision</div>
+        <div class="big-status-value" id="decisionText">PASS</div>
+        <div class="board-info-row">BOARD V100_LOT999_145745</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>操作</h2>
+          <span class="panel-code">CTRL</span>
+        </div>
+        <div class="control-btn-grid">
+          <button class="action-btn primary" id="runBtn" type="button">開始連續檢測</button>
+          <button class="action-btn" id="snapBtn" type="button">擷取單張</button>
+          <button class="action-btn" id="reviewBtn" type="button">送出人工覆核</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>設備狀態</h2>
+          <span class="panel-code">IO</span>
+        </div>
+        <div class="metric-stack">
+          <div class="metric-card">
+            <div class="label">CPU Temp</div>
+            <div class="value">46.2C</div>
+            <div class="sub">Raspberry Pi edge node</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">Queue</div>
+            <div class="value">0</div>
+            <div class="sub">no pending captures</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script>
+    const runBtn = document.getElementById('runBtn');
+    const snapBtn = document.getElementById('snapBtn');
+    const reviewBtn = document.getElementById('reviewBtn');
+    const log = document.getElementById('terminalLog');
+    const decisionPanel = document.getElementById('decisionPanel');
+    const decisionText = document.getElementById('decisionText');
+
+    function stamp() {
+      const now = new Date();
+      return now.toLocaleTimeString('zh-TW', { hour12: false }) + '.' + String(now.getMilliseconds()).padStart(3, '0');
+    }
+
+    function addLog(kind, message) {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `<span class="log-time">${stamp()}</span><span class="log-${kind}">${message}</span>`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    runBtn.addEventListener('click', () => {
+      const running = runBtn.classList.toggle('active-run');
+      runBtn.textContent = running ? '停止連續檢測' : '開始連續檢測';
+      addLog(running ? 'warn' : 'info', running ? 'continuous inspection started' : 'continuous inspection stopped');
+    });
+
+    snapBtn.addEventListener('click', () => {
+      const fail = Math.random() > 0.72;
+      decisionPanel.classList.toggle('pass', !fail);
+      decisionPanel.classList.toggle('fail', fail);
+      decisionText.textContent = fail ? 'FAIL' : 'PASS';
+      addLog(fail ? 'fail' : 'pass', fail ? 'single capture flagged R03 polarity mismatch' : 'single capture completed with PASS decision');
+    });
+
+    reviewBtn.addEventListener('click', () => {
+      addLog('warn', 'operator review task created for current board');
+    });
+  </script>
+</body>
+</html>

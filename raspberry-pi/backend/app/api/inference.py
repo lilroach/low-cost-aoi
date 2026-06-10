@@ -27,6 +27,10 @@ class HailoInferenceAdapter:
         self.model_dir = model_dir
         self.manifest = load_model_manifest(model_dir)
         self.model_id = self.manifest["model_id"]
+        if self.manifest["format"] != "hailo-hef":
+            raise ModelManifestError(
+                f"Model {self.model_id} is {self.manifest['format']}; convert it to hailo-hef before Raspberry Pi inference."
+            )
         self.hef_path = model_dir / "model.hef"
         try:
             import hailo_platform  # type: ignore

@@ -1,15 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://low-cost-aoi.local/contracts/model_manifest.schema.json",
-  "title": "AOI Hailo Model Manifest",
+  "title": "AOI Model Manifest",
   "type": "object",
-  "required": ["model_id", "part_no", "version", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at", "checksum"],
+  "required": ["model_id", "part_no", "version", "format", "source_yolo_model", "classes", "input_size", "postprocess", "created_at"],
   "properties": {
     "model_id": { "type": "string" },
     "part_no": { "type": "string" },
     "version": { "type": "string" },
-    "format": { "type": "string", "const": "hailo-hef" },
+    "format": { "type": "string", "enum": ["hailo-hef", "ultralytics-pt"] },
     "source_yolo_model": { "type": "string" },
+    "weights": { "type": "string" },
+    "weights_sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
     "classes": {
       "type": "array",
       "items": { "type": "string" },
@@ -41,5 +43,25 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "format": { "const": "hailo-hef" } },
+        "required": ["format"]
+      },
+      "then": {
+        "required": ["checksum"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "format": { "const": "ultralytics-pt" } },
+        "required": ["format"]
+      },
+      "then": {
+        "required": ["weights", "weights_sha256"]
+      }
+    }
+  ],
   "additionalProperties": true
 }
