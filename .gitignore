@@ -48,6 +48,7 @@ training-host/models/
 # Temporary
 tmp/
 temp/
+.worktrees/
 
 # Exclude unrelated tools
 novel-helper/
