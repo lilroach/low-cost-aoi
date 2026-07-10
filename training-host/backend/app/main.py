@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import datasets, training
+from app.api import datasets, edges, training
 import os
 from pathlib import Path
 
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 app.include_router(datasets.router, prefix="/api")
+app.include_router(edges.router, prefix="/api")
 app.include_router(training.router, prefix="/api")
 
 @app.get("/api/health")
