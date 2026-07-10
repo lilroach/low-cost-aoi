@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import asyncio
@@ -20,6 +20,7 @@ from app.api.program import Point
 from app.api import program
 from app.config import HISTORY_DIR, MACHINE_ID, TRAINING_HOST_URL
 from app.run_bundle import create_run_bundle
+from app.history_bundle import build_history_bundle
 from app import runtime_state
 
 HISTORY_DIR = str(HISTORY_DIR)
@@ -182,6 +183,16 @@ async def list_history():
                 except:
                     pass
     return runs
+@router.get("/history/{run_id}/bundle")
+async def download_history_bundle(run_id: str) -> Response:
+    content = build_history_bundle(run_id)
+    return Response(
+        content=content,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{run_id}.zip"'},
+    )
+
+
 
 @router.get("/history/{run_id}")
 async def get_history_detail(run_id: str):
