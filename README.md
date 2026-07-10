@@ -134,6 +134,40 @@ Training Host 現在提供：
 - `GET /api/training/models`: 列出可發布的模型包。
 - `GET /api/training/models/{model_id}/download`: 下載模型包。
 
+## Training Host 透過 SSH 手動同步 Edge
+
+Training Host 可透過 Tailscale 與 OpenSSH，唯讀拉取 Raspberry Pi 的 Capture、檢測歷史、相機狀態、模型清單、服務狀態與最近日誌。
+
+1. 複製設定範例：
+
+```powershell
+Copy-Item training-host\config\edge_devices.example.json training-host\config\edge_devices.json
+```
+
+2. 只在本機編輯 `training-host/config/edge_devices.json`，填入 Edge 的 Tailscale DNS/IP、SSH 使用者、私鑰與 `known_hosts` 路徑。正式設定檔已由 Git 忽略。
+3. 第一次連線先在 Training Host 終端機執行標準 SSH 指令，人工確認主機指紋並寫入 `known_hosts`：
+
+```powershell
+ssh -i C:\Users\aoi\.ssh\aoi_pi_ed25519 aoi@pi-edge-01.tailnet-example.ts.net
+```
+
+以上位址與使用者只是範例，請替換成自己的裝置資料。不要將私鑰、密碼或真實裝置設定提交到 Git。
+
+4. 啟動 Training Host 前後端，進入「資料集」頁面。
+5. 先按「測試連線」，成功後再按「從 Edge 同步」。
+6. 查看新增、跳過、更新、失敗數量及最近服務日誌。
+
+同步只會讀取 Edge 資料，不會刪除圖片、修改人工判定、切換模型或重新啟動服務。相同 bundle 會跳過；同一筆資料內容更新時會保留新版本。
+
+可用 API：
+
+- `GET /api/edges`：裝置與最近同步摘要。
+- `POST /api/edges/{device_id}/test`：測試 SSH 與 Edge Backend。
+- `POST /api/edges/{device_id}/sync`：執行一次手動同步。
+- `GET /api/edges/{device_id}/latest`：最近診斷與同步結果。
+
+若設定檔位於其他路徑，可用 `AOI_EDGE_DEVICES_FILE` 指定。
+
 ## Edge 與 Training Host 資料交換
 
 Edge 每次檢測可將一個 run bundle 上傳到 Training Host。bundle 內容固定為：

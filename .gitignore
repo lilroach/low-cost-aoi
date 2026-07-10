@@ -49,6 +49,7 @@ training-host/models/
 tmp/
 temp/
 .worktrees/
+training-host/config/edge_devices.json
 
 # Exclude unrelated tools
 novel-helper/

@@ -51,6 +51,16 @@ These items track the next step after the YOLO11 terminal smoke training flow.
 - [x] Add model bundle packaging action from a completed `best.pt`, producing `models/<model_id>/manifest.json` plus weights for simulator validation and later Hailo export. <!-- id: 26 -->
 - [ ] Add a dataset quality checklist for minimum OK / 毛絲 / 殘肉 image counts before starting a new training run. <!-- id: 27 -->
 
+## SSH Edge Manual Sync Roadmap
+
+- [x] Add a readonly Raspberry Pi history run bundle endpoint with safe run ID validation. <!-- id: 40 -->
+- [x] Add Training Host OpenSSH reader with key authentication, known_hosts verification, fixed command allowlist, timeouts, and sensitive-path redaction. <!-- id: 41 -->
+- [x] Reuse one validated run importer for HTTP uploads and SSH synchronization. <!-- id: 42 -->
+- [x] Track added, skipped, updated, and failed bundles while preserving Edge source data and prior Training Host versions. <!-- id: 43 -->
+- [x] Save camera, model, disk, service, and journal diagnostic snapshots separately from training data. <!-- id: 44 -->
+- [x] Add Training Host UI for connection testing, manual synchronization, summaries, item errors, and recent logs. <!-- id: 45 -->
+- [x] Document local device configuration and operator workflow without committing real credentials. <!-- id: 46 -->
+
 ## Simulator-Only Feature Cleanup Roadmap
 
 - [ ] Keep `sim-camera` image carousel documented as a Windows Edge Simulator-only development tool. Remove or disable it for Raspberry Pi production deployment. <!-- id: 28 -->

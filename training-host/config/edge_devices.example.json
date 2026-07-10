@@ -1,0 +1,11 @@
+[
+  {
+    "device_id": "pi-edge-01",
+    "name": "Raspberry Pi AOI",
+    "host": "pi-edge-01.tailnet-example.ts.net",
+    "port": 22,
+    "user": "aoi",
+    "identity_file": "C:\\Users\\aoi\\.ssh\\aoi_pi_ed25519",
+    "known_hosts_file": "C:\\Users\\aoi\\.ssh\\known_hosts"
+  }
+]
