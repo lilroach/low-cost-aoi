@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2, Database, ExternalLink, FolderOpen, Image as ImageIcon, PackageCheck, RefreshCw, ShieldCheck, TableProperties } from 'lucide-react';
+import { EdgeSyncPanel } from './EdgeSyncPanel';
 
 interface DatasetManagerProps {
     className?: string;
@@ -112,6 +113,8 @@ export function DatasetManager({ className }: DatasetManagerProps) {
                     重新整理
                 </button>
             </div>
+
+            <EdgeSyncPanel onSynced={fetchInventory} />
 
             {notice && (
                 <div className="rounded-md border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
