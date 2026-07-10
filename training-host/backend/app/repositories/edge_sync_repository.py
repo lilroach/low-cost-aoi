@@ -47,4 +47,3 @@ class EdgeDeviceRepository:
             if device.device_id == device_id:
                 return device
         raise KeyError(device_id)
-

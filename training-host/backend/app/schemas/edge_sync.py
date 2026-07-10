@@ -34,4 +34,3 @@ class EdgeSyncResult(BaseModel):
     counts: Dict[str, int]
     items: list[SyncItem]
     diagnostics: Dict[str, Any]
-

@@ -40,4 +40,3 @@ class EdgeSyncStateRepository:
         timestamp = str(snapshot["synced_at"]).replace(":", "").replace("-", "")
         timestamp = timestamp.replace("+0000", "Z").replace("+00:00", "Z")
         (history_dir / f"{timestamp}.json").write_text(content, encoding="utf-8")
-
